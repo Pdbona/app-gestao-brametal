@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/app-gestao-brametal/static/css/main.502a81fb.css",
-    "main.js": "/app-gestao-brametal/static/js/main.0af23371.js",
+    "main.js": "/app-gestao-brametal/static/js/main.3bd7da6b.js",
     "index.html": "/app-gestao-brametal/index.html",
     "main.502a81fb.css.map": "/app-gestao-brametal/static/css/main.502a81fb.css.map",
-    "main.0af23371.js.map": "/app-gestao-brametal/static/js/main.0af23371.js.map"
+    "main.3bd7da6b.js.map": "/app-gestao-brametal/static/js/main.3bd7da6b.js.map"
   },
   "entrypoints": [
     "static/css/main.502a81fb.css",
-    "static/js/main.0af23371.js"
+    "static/js/main.3bd7da6b.js"
   ]
 }
