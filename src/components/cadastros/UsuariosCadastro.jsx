@@ -178,7 +178,13 @@ export default function UsuariosCadastro({ permissoes }) {
                 onChange={(e) => setForm({ ...form, perfilId: e.target.value })}
               >
                 <option value="">Selecione...</option>
-                {perfisDisponiveis.map((p) => (
+                {/* "Administrador" (perfil de sistema, acesso de emergência
+                    pela senha padrão) fica de fora das opções — pedido do
+                    Pablo, 14/09/2026: não dá pra atribuir esse perfil a um
+                    usuário nomeado por aqui. Continua existindo como
+                    fallback em getPerfil() pra exibir corretamente usuários
+                    antigos que já tinham sido cadastrados com ele. */}
+                {perfis.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.nome}
                   </option>

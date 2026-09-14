@@ -2,29 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { db, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from '../../lib/db';
 import { ui, NAVY } from '../../lib/styles';
 import { formatarCpf, normalizarCpf, validarCpf } from '../../lib/cpf';
-import { PERFIL_ADMIN_PADRAO } from '../../lib/permissoes';
 
 const COLABORADOR_VAZIO = {
   nome: '',
   cpf: '',
-  perfilId: '',
   areaDdsId: '',
   areasTrabalhoIds: [],
-  turnoPadraoId: '',
   ativo: true
 };
 
 // Base de colaboradores da ML que atuam na Brametal. É contra este
 // cadastro que a tela pública de presença valida quem está registrando.
 //
-// O "cargo" do colaborador é o mesmo PERFIL usado em Cadastros → Usuários
-// → Perfil (pedido do Pablo, 10/09/2026: "a Função na verdade é perfil,
-// deve seguir a tela de cadastro de perfil") — não existe mais uma lista
-// própria de funções (Conferente/Tratorista/...) fixa no código; a lista
-// vem de `perfis`, a mesma fonte que os Usuários do sistema usam pra
-// permissão de tela. Um colaborador NÃO precisa logar no sistema (ele só
-// aparece pelo CPF na tela pública de presença) — o perfil aqui é
-// descritivo/organizacional, não concede acesso por si só.
+// Esta tela NÃO tem Perfil nem Turno padrão (removidos em 14/09/2026 a
+// pedido do Pablo: "esta tela seria apenas para liberar o registro de
+// chegada e saída") — só o vínculo com Área importa aqui. O colaborador
+// nunca logou no sistema mesmo (só aparece pelo CPF na tela pública de
+// presença), então não havia RBAC envolvido nessa remoção.
 //
 // O vínculo com Área é o que resolve o ponto levantado pelo Pablo: parte
 // dos colaboradores tem DOIS locais de chegada — o ponto de DDS (comum a
@@ -39,8 +33,6 @@ export default function ColaboradoresCadastro({ permissoes }) {
 
   const [colaboradores, setColaboradores] = useState([]);
   const [areas, setAreas] = useState([]);
-  const [turnos, setTurnos] = useState([]);
-  const [perfis, setPerfis] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [formAberto, setFormAberto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -60,17 +52,9 @@ export default function ColaboradoresCadastro({ permissoes }) {
     const unsubAreas = onSnapshot(query(collection(db, 'areas'), orderBy('nome')), (snap) => {
       setAreas(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
-    const unsubTurnos = onSnapshot(query(collection(db, 'turnos'), orderBy('horaInicio')), (snap) => {
-      setTurnos(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    });
-    const unsubPerfis = onSnapshot(query(collection(db, 'perfis'), orderBy('nome')), (snap) => {
-      setPerfis(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    });
     return () => {
       unsubColabs();
       unsubAreas();
-      unsubTurnos();
-      unsubPerfis();
     };
   }, []);
 
@@ -80,10 +64,7 @@ export default function ColaboradoresCadastro({ permissoes }) {
   const areasDds = areas.filter((a) => a.status !== 'inativo' && a.tipo === 'dds');
   const areasTrabalho = areas.filter((a) => a.status !== 'inativo' && a.tipo === 'servico');
   const areasPresenca = [...areasDds, ...areasTrabalho];
-  const turnosAtivos = turnos.filter((t) => t.ativo !== false);
-  const perfisDisponiveis = [PERFIL_ADMIN_PADRAO, ...perfis.filter((p) => p.id !== PERFIL_ADMIN_PADRAO.id)];
   const nomeArea = (id) => areas.find((a) => a.id === id)?.nome || '';
-  const nomePerfil = (id) => perfisDisponiveis.find((p) => p.id === id)?.nome || '';
 
   const abrirNovo = () => {
     setForm({ ...COLABORADOR_VAZIO, areaDdsId: areasDds.length === 1 ? areasDds[0].id : '' });
@@ -96,10 +77,8 @@ export default function ColaboradoresCadastro({ permissoes }) {
     setForm({
       nome: colaborador.nome || '',
       cpf: formatarCpf(colaborador.cpf || ''),
-      perfilId: colaborador.perfilId || '',
       areaDdsId: colaborador.areaDdsId || '',
       areasTrabalhoIds: Array.isArray(colaborador.areasTrabalhoIds) ? colaborador.areasTrabalhoIds : [],
-      turnoPadraoId: colaborador.turnoPadraoId || '',
       ativo: colaborador.ativo !== false
     });
     setEditandoId(colaborador.id);
@@ -143,10 +122,6 @@ export default function ColaboradoresCadastro({ permissoes }) {
       setErro('Já existe um colaborador ativo com esse CPF.');
       return;
     }
-    if (!form.perfilId) {
-      setErro('Selecione o perfil do colaborador.');
-      return;
-    }
     if (!form.areaDdsId && form.areasTrabalhoIds.length === 0) {
       setErro('Vincule pelo menos uma área (DDS ou Serviço) — é ela que libera o registro de presença.');
       return;
@@ -157,10 +132,8 @@ export default function ColaboradoresCadastro({ permissoes }) {
       const payload = {
         nome: form.nome.trim(),
         cpf: cpfLimpo,
-        perfilId: form.perfilId,
         areaDdsId: form.areaDdsId || null,
         areasTrabalhoIds: form.areasTrabalhoIds,
-        turnoPadraoId: form.turnoPadraoId || null,
         ativo: form.ativo
       };
       if (editandoId) {
@@ -224,37 +197,6 @@ export default function ColaboradoresCadastro({ permissoes }) {
                 maxLength={14}
               />
               <span style={styles.ajuda}>É o CPF que identifica a pessoa no registro de presença.</span>
-            </label>
-            <label style={ui.label}>
-              Perfil *
-              <select style={ui.input} value={form.perfilId} onChange={(e) => setForm({ ...form, perfilId: e.target.value })}>
-                <option value="">Selecione...</option>
-                {perfisDisponiveis.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nome}
-                  </option>
-                ))}
-              </select>
-              <span style={styles.ajuda}>
-                Mesma lista de Cadastros → Usuários → Perfil. Cadastre um perfil novo lá (ex:
-                Conferente, Tratorista) se ainda não existir.
-              </span>
-            </label>
-            <label style={ui.label}>
-              Turno padrão
-              <select
-                style={ui.input}
-                value={form.turnoPadraoId}
-                onChange={(e) => setForm({ ...form, turnoPadraoId: e.target.value })}
-              >
-                <option value="">Perguntar no registro</option>
-                {turnosAtivos.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.nome} ({t.horaInicio}–{t.horaFim})
-                  </option>
-                ))}
-              </select>
-              <span style={styles.ajuda}>Se preenchido, o registro já entra nesse turno sem perguntar.</span>
             </label>
             <label style={ui.label}>
               Status
@@ -337,7 +279,6 @@ export default function ColaboradoresCadastro({ permissoes }) {
               <tr>
                 <th style={ui.th}>Nome</th>
                 <th style={ui.th}>CPF</th>
-                <th style={ui.th}>Perfil</th>
                 <th style={ui.th}>DDS</th>
                 <th style={ui.th}>Áreas de Serviço</th>
                 <th style={ui.th}>Status</th>
@@ -349,7 +290,6 @@ export default function ColaboradoresCadastro({ permissoes }) {
                 <tr key={c.id}>
                   <td style={ui.td}>{c.nome}</td>
                   <td style={ui.td}>{formatarCpf(c.cpf)}</td>
-                  <td style={ui.td}>{nomePerfil(c.perfilId) || <span style={{ color: '#999' }}>—</span>}</td>
                   <td style={ui.td}>{nomeArea(c.areaDdsId) || <span style={{ color: '#999' }}>—</span>}</td>
                   <td style={ui.td}>
                     {(c.areasTrabalhoIds || []).length === 0 ? (
