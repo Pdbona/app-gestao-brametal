@@ -7,7 +7,7 @@ const COLABORADOR_VAZIO = {
   nome: '',
   cpf: '',
   areaDdsId: '',
-  areasTrabalhoIds: [],
+  areaTrabalhoId: '',
   ativo: true
 };
 
@@ -78,7 +78,7 @@ export default function ColaboradoresCadastro({ permissoes }) {
       nome: colaborador.nome || '',
       cpf: formatarCpf(colaborador.cpf || ''),
       areaDdsId: colaborador.areaDdsId || '',
-      areasTrabalhoIds: Array.isArray(colaborador.areasTrabalhoIds) ? colaborador.areasTrabalhoIds : [],
+      areaTrabalhoId: colaborador.areaTrabalhoId || '',
       ativo: colaborador.ativo !== false
     });
     setEditandoId(colaborador.id);
@@ -91,16 +91,6 @@ export default function ColaboradoresCadastro({ permissoes }) {
     setEditandoId(null);
     setForm(COLABORADOR_VAZIO);
     setErro('');
-  };
-
-  const toggleAreaTrabalho = (areaId) => {
-    setForm((f) => {
-      const jaTem = f.areasTrabalhoIds.indexOf(areaId) >= 0;
-      return {
-        ...f,
-        areasTrabalhoIds: jaTem ? f.areasTrabalhoIds.filter((id) => id !== areaId) : [...f.areasTrabalhoIds, areaId]
-      };
-    });
   };
 
   const salvar = async () => {
@@ -122,7 +112,7 @@ export default function ColaboradoresCadastro({ permissoes }) {
       setErro('Já existe um colaborador ativo com esse CPF.');
       return;
     }
-    if (!form.areaDdsId && form.areasTrabalhoIds.length === 0) {
+    if (!form.areaDdsId && !form.areaTrabalhoId) {
       setErro('Vincule pelo menos uma área (DDS ou Serviço) — é ela que libera o registro de presença.');
       return;
     }
@@ -133,7 +123,7 @@ export default function ColaboradoresCadastro({ permissoes }) {
         nome: form.nome.trim(),
         cpf: cpfLimpo,
         areaDdsId: form.areaDdsId || null,
-        areasTrabalhoIds: form.areasTrabalhoIds,
+        areaTrabalhoId: form.areaTrabalhoId || null,
         ativo: form.ativo
       };
       if (editandoId) {
@@ -230,31 +220,22 @@ export default function ColaboradoresCadastro({ permissoes }) {
               <span style={styles.ajuda}>Registra só a chegada, sem saída.</span>
             </label>
 
-            <div style={{ marginTop: 14 }}>
-              <div style={styles.rotuloBloco}>Áreas de Serviço (chegada e saída)</div>
-              {areasTrabalho.length === 0 ? (
-                <p style={ui.placeholderNote}>Nenhuma área de Serviço cadastrada ainda.</p>
-              ) : (
-                <div style={styles.chipsAreas}>
-                  {areasTrabalho.map((a) => {
-                    const marcado = form.areasTrabalhoIds.indexOf(a.id) >= 0;
-                    return (
-                      <label key={a.id} style={{ ...styles.chipArea, ...(marcado ? styles.chipAreaMarcado : {}) }}>
-                        <input type="checkbox" checked={marcado} onChange={() => toggleAreaTrabalho(a.id)} />
-                        <span>
-                          {a.nome}
-                          {a.codigo ? ` (${a.codigo})` : ''}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-              <span style={styles.ajuda}>
-                Marque mais de uma quando o colaborador circula entre áreas — no registro, a
-                geolocalização decide em qual delas ele está.
-              </span>
-            </div>
+            <label style={{ ...ui.label, maxWidth: 340, marginTop: 14 }}>
+              Área de Serviço (chegada e saída)
+              <select
+                style={ui.input}
+                value={form.areaTrabalhoId}
+                onChange={(e) => setForm({ ...form, areaTrabalhoId: e.target.value })}
+              >
+                <option value="">Nenhuma</option>
+                {areasTrabalho.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.nome}
+                  </option>
+                ))}
+              </select>
+              <span style={styles.ajuda}>Um colaborador só pode ter uma Área de Serviço.</span>
+            </label>
           </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
@@ -280,7 +261,7 @@ export default function ColaboradoresCadastro({ permissoes }) {
                 <th style={ui.th}>Nome</th>
                 <th style={ui.th}>CPF</th>
                 <th style={ui.th}>DDS</th>
-                <th style={ui.th}>Áreas de Serviço</th>
+                <th style={ui.th}>Área de Serviço</th>
                 <th style={ui.th}>Status</th>
                 <th style={ui.th}>Ações</th>
               </tr>
@@ -292,14 +273,10 @@ export default function ColaboradoresCadastro({ permissoes }) {
                   <td style={ui.td}>{formatarCpf(c.cpf)}</td>
                   <td style={ui.td}>{nomeArea(c.areaDdsId) || <span style={{ color: '#999' }}>—</span>}</td>
                   <td style={ui.td}>
-                    {(c.areasTrabalhoIds || []).length === 0 ? (
-                      <span style={{ color: '#999' }}>—</span>
+                    {c.areaTrabalhoId ? (
+                      <span style={{ ...ui.badge, ...ui.badgeAzul }}>{nomeArea(c.areaTrabalhoId)}</span>
                     ) : (
-                      (c.areasTrabalhoIds || []).map((id) => (
-                        <span key={id} style={{ ...ui.badge, ...ui.badgeAzul, marginRight: 4 }}>
-                          {nomeArea(id) || id}
-                        </span>
-                      ))
+                      <span style={{ color: '#999' }}>—</span>
                     )}
                   </td>
                   <td style={ui.td}>
@@ -337,20 +314,5 @@ export default function ColaboradoresCadastro({ permissoes }) {
 const styles = {
   ajuda: { fontSize: 12, color: '#777', fontWeight: 400 },
   subtitulo: { margin: '18px 0 8px', color: NAVY },
-  alocacaoBox: { background: '#F8F9FB', borderRadius: 8, padding: 16, marginBottom: 16 },
-  rotuloBloco: { fontSize: 13, fontWeight: 600, color: '#444', marginBottom: 6 },
-  chipsAreas: { display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6 },
-  chipArea: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-    padding: '7px 12px',
-    background: '#FFF',
-    border: '1px solid #E0E0E0',
-    borderRadius: 20,
-    fontSize: 13,
-    cursor: 'pointer',
-    userSelect: 'none'
-  },
-  chipAreaMarcado: { borderColor: '#FF6B00', background: '#FFF7EF', fontWeight: 600 }
+  alocacaoBox: { background: '#F8F9FB', borderRadius: 8, padding: 16, marginBottom: 16 }
 };

@@ -106,15 +106,15 @@ export function resolverAreaPorGeo(areas, lat, lng) {
 // Áreas que um colaborador pode usar: as que ele tem vinculadas no
 // cadastro. Sem nenhum vínculo, ele não registra presença em lugar
 // nenhum — é proposital, o vínculo é o que diz onde a pessoa foi alocada.
-// Só existem vínculos com áreas de presença (tipo 'dds' ou 'servico', ver
-// ColaboradoresCadastro.jsx), mas a função não impõe isso — quem monta a
-// lista de áreas já filtra antes de chamar.
+// No máximo 2: um Ponto de DDS + uma Área de Serviço (desde 14/09/2026 —
+// pedido do Pablo: um colaborador só pode ter UMA área de Serviço, não
+// mais uma lista). Só existem vínculos com áreas de presença (tipo 'dds'
+// ou 'servico', ver ColaboradoresCadastro.jsx), mas a função não impõe
+// isso — quem monta a lista de áreas já filtra antes de chamar.
 export function areasDoColaborador(colaborador, areas) {
   const ids = [];
   if (colaborador && colaborador.areaDdsId) ids.push(colaborador.areaDdsId);
-  if (colaborador && Array.isArray(colaborador.areasTrabalhoIds)) {
-    colaborador.areasTrabalhoIds.forEach((id) => ids.push(id));
-  }
+  if (colaborador && colaborador.areaTrabalhoId) ids.push(colaborador.areaTrabalhoId);
   return areas.filter((a) => ids.indexOf(a.id) >= 0);
 }
 
