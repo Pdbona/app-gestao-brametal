@@ -120,6 +120,7 @@ export const ui = {
   badgeLaranja: { background: '#FFF1E3', color: '#B85700' },
   badgeAzul: { background: '#E5EDF7', color: NAVY },
   badgeVermelho: { background: '#FBE7E7', color: '#B3261E' },
+  badgeRoxo: { background: '#F0E6FA', color: '#6B3FA0' },
 
   erro: { color: '#D32F2F', marginTop: 12, fontSize: 14 },
 

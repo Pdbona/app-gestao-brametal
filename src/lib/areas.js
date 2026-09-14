@@ -2,54 +2,53 @@
 // ÁREAS — o cadastro central deste app
 // ============================================================
 //
-// Modelo em DOIS NÍVEIS (redesenhado em 10/09/2026 a partir do print do
-// Pablo vendo a tela real e detalhando o que cada tipo de área precisa):
+// Modelo em 1 NÍVEL, 3 tipos (simplificado em 14/09/2026 a partir do
+// pedido do Pablo — ANTES disso existiam 2 níveis, tipo+subtipo, com 4
+// combinações; ele achou o campo confuso vendo a tela real e pediu pra
+// achatar):
 //
-//   `tipo` (nível 1) — separa as duas famílias de área que a Brametal tem:
-//     - 'servico'  → onde os COLABORADORES batem presença (chegada/saída).
-//     - 'operacao' → onde as VTIs são MOVIMENTADAS (pátio/produção) — a
-//                    base pras fases seguintes (Conferente/Tratorista);
-//                    ainda não tem tela própria, só o cadastro já existe.
+//   - 'dds'      → registra só o momento da DDS (sem saída). Pode ter
+//                  mais de um local.
+//   - 'servico'  → local onde a ML presta serviço de mão de obra pro
+//                  cliente: registra CHEGADA e SAÍDA dos colaboradores,
+//                  e é sobre esse horário que a tolerância/janela vale.
+//   - 'operacao' → local de movimentação das VTIs (pátio, produção) — a
+//                  base pras fases seguintes (Conferente/Tratorista);
+//                  ainda não tem tela própria, só o cadastro já existe.
+//                  ATÉ 14/09/2026 isso se dividia em Pátio/GAL (só Pátio
+//                  ganhava Endereço) — o Pablo pediu pra juntar num tipo
+//                  só: qualquer área de Operação pode ganhar Endereço
+//                  agora (ver EnderecosCadastro.jsx).
 //
-//   `subtipo` (nível 2) — o comportamento dentro de cada família:
-//     - servico:  'dds' (só chegada, sem saída — o ponto de DDS da
-//                 Brametal, GEMBA registra "Presença em DDS SEM
-//                 checkout") | 'trabalho' (chegada E saída).
-//     - operacao: 'patio' (terá endereços — cadastro à parte, feito pelo
-//                 Pablo) | 'gal' (Galpão de Produção).
+// Um colaborador só se vincula a áreas do tipo 'dds' ou 'servico' (é o
+// que resolve os "dois locais de chegada": o DDS e a área de trabalho
+// onde ele foi alocado) — ver ColaboradoresCadastro.jsx e
+// RegistroPresencaScreen.jsx. `ehTipoDePresenca()` abaixo é o jeito
+// central de checar isso.
 //
-// Um colaborador só se vincula a áreas do tipo 'servico' (é o que resolve
-// os "dois locais de chegada": o DDS e a área de trabalho onde ele foi
-// alocado) — ver ColaboradoresCadastro.jsx e RegistroPresencaScreen.jsx.
-//
-// Geolocalização + raio de abrangência valem pros DOIS tipos — a
-// validação por GPS é a regra em toda a operação (presença hoje,
-// movimentação de VTI mais adiante), com QR Code sempre opcional como
-// atalho.
+// Geolocalização + raio de abrangência valem pros 3 tipos — a validação
+// por GPS é a regra em toda a operação (presença hoje, movimentação de
+// VTI mais adiante), com QR Code sempre opcional como atalho.
 
 import { distanciaMetros } from './geo';
 
 export const TIPOS_AREA = [
   {
+    id: 'dds',
+    label: 'DDS',
+    descricao: 'Só registra o momento da DDS (sem saída) — pode ter mais de um local.'
+  },
+  {
     id: 'servico',
-    label: 'Área de Serviço',
-    descricao: 'Chegada e saída dos colaboradores (registro de presença).'
+    label: 'Serviço',
+    descricao:
+      'Local onde a ML presta serviço de mão de obra pro cliente — registra chegada e saída dos colaboradores.'
   },
   {
     id: 'operacao',
-    label: 'Área de Operação',
-    descricao: 'Movimentação de VTIs — pátios e produção.'
+    label: 'Operação',
+    descricao: 'Local de movimentação das VTIs (pátio, produção).'
   }
-];
-
-export const SUBTIPOS_SERVICO = [
-  { id: 'dds', label: 'Ponto de DDS', descricao: 'Só registra a chegada (sem saída).' },
-  { id: 'trabalho', label: 'Área de trabalho', descricao: 'Registra chegada e saída.' }
-];
-
-export const SUBTIPOS_OPERACAO = [
-  { id: 'patio', label: 'Pátio', descricao: 'Terá endereços próprios (cadastro à parte).' },
-  { id: 'gal', label: 'GAL (Produção)', descricao: 'Galpão de produção.' }
 ];
 
 // Ponto de partida do campo "raio de abrangência" no cadastro. O GPS de
@@ -59,71 +58,16 @@ export const RAIO_PADRAO_METROS = 100;
 export const RAIO_MINIMO_METROS = 20;
 export const RAIO_MAXIMO_METROS = 2000;
 
-// Lista "achatada" (nível 1 + nível 2 num só) usada no formulário de
-// cadastro — pedido do Pablo (14/09/2026) pra simplificar de 2 campos
-// (Tipo + Comportamento) pra 1 só, já com "DDS" como opção direta. A
-// área continua guardando `tipo`/`subtipo` separados por baixo (é o que
-// o resto do app usa: filtro de área de serviço, alocação de
-// colaborador, dashboards) — só a TELA de cadastro ficou mais simples.
-export const OPCOES_TIPO_AREA = [
-  {
-    tipo: 'servico',
-    subtipo: 'dds',
-    grupo: 'Área de Serviço',
-    label: 'DDS',
-    descricao: 'Só registra a chegada dos colaboradores (sem saída).'
-  },
-  {
-    tipo: 'servico',
-    subtipo: 'trabalho',
-    grupo: 'Área de Serviço',
-    label: 'Área de trabalho',
-    descricao: 'Registra chegada e saída dos colaboradores.'
-  },
-  {
-    tipo: 'operacao',
-    subtipo: 'patio',
-    grupo: 'Área de Operação',
-    label: 'Pátio',
-    descricao: 'Movimentação de VTIs — terá endereços próprios.'
-  },
-  {
-    tipo: 'operacao',
-    subtipo: 'gal',
-    grupo: 'Área de Operação',
-    label: 'GAL (Produção)',
-    descricao: 'Movimentação de VTIs — galpão de produção.'
-  }
-];
-
-export function valorTipoArea(tipo, subtipo) {
-  return `${tipo}:${subtipo}`;
-}
-
-export function opcaoTipoArea(tipo, subtipo) {
-  return OPCOES_TIPO_AREA.find((o) => o.tipo === tipo && o.subtipo === subtipo) || null;
-}
-
 export function rotuloTipoArea(id) {
   const t = TIPOS_AREA.find((x) => x.id === id);
   return t ? t.label : id || '-';
 }
 
-export function rotuloSubtipoServico(id) {
-  const s = SUBTIPOS_SERVICO.find((x) => x.id === id);
-  return s ? s.label : id || '-';
-}
-
-export function rotuloSubtipoOperacao(id) {
-  const s = SUBTIPOS_OPERACAO.find((x) => x.id === id);
-  return s ? s.label : id || '-';
-}
-
-// Rótulo do 2º nível, dado o objeto área completo — usado nas listagens,
-// que não sabem de antemão se a área é 'servico' ou 'operacao'.
-export function rotuloSubtipoArea(area) {
-  if (!area) return '-';
-  return area.tipo === 'operacao' ? rotuloSubtipoOperacao(area.subtipo) : rotuloSubtipoServico(area.subtipo);
+// Área usada pra presença de colaborador (DDS ou Serviço) — é a checagem
+// central que separa esses 2 tipos do tipo Operação (que é sobre
+// movimentação de VTI, sem relação com presença de pessoas).
+export function ehTipoDePresenca(tipo) {
+  return tipo === 'dds' || tipo === 'servico';
 }
 
 export function raioDaArea(area) {
@@ -162,7 +106,7 @@ export function resolverAreaPorGeo(areas, lat, lng) {
 // Áreas que um colaborador pode usar: as que ele tem vinculadas no
 // cadastro. Sem nenhum vínculo, ele não registra presença em lugar
 // nenhum — é proposital, o vínculo é o que diz onde a pessoa foi alocada.
-// Só existem vínculos com áreas do tipo 'servico' (ver
+// Só existem vínculos com áreas de presença (tipo 'dds' ou 'servico', ver
 // ColaboradoresCadastro.jsx), mas a função não impõe isso — quem monta a
 // lista de áreas já filtra antes de chamar.
 export function areasDoColaborador(colaborador, areas) {

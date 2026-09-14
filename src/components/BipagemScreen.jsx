@@ -38,8 +38,8 @@ export default function BipagemScreen() {
   const [erroUd, setErroUd] = useState('');
   const [bipando, setBipando] = useState(false);
 
-  // Áreas de Operação (Pátio ou GAL) — é onde a bipagem acontece;
-  // qualquer uma serve de origem, não só o Pátio.
+  // Áreas de Operação — é onde a bipagem acontece; qualquer uma serve de
+  // origem.
   useEffect(() => {
     const q = query(collection(db, 'areas'), where('tipo', '==', 'operacao'), orderBy('nome'));
     const unsubscribe = onSnapshot(

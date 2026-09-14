@@ -16,14 +16,11 @@ import { ui, NAVY } from '../../lib/styles';
 import { capturarGeolocalizacao } from '../../lib/geo';
 import { TOLERANCIA_ENTRADA_MINUTOS, TOLERANCIA_SAIDA_MINUTOS } from '../../lib/data';
 import {
-  OPCOES_TIPO_AREA,
+  TIPOS_AREA,
   RAIO_PADRAO_METROS,
   RAIO_MINIMO_METROS,
   RAIO_MAXIMO_METROS,
   rotuloTipoArea,
-  rotuloSubtipoArea,
-  valorTipoArea,
-  opcaoTipoArea,
   montarUrlRegistro
 } from '../../lib/areas';
 
@@ -33,7 +30,6 @@ const LOGO_BRAMETAL = `${process.env.PUBLIC_URL}/logos/logo-brametal.png`;
 const AREA_VAZIA = {
   nome: '',
   tipo: 'servico',
-  subtipo: 'trabalho',
   toleranciaEntradaMin: TOLERANCIA_ENTRADA_MINUTOS,
   toleranciaSaidaMin: TOLERANCIA_SAIDA_MINUTOS,
   geoLat: null,
@@ -46,8 +42,7 @@ const AREA_VAZIA = {
 
 // Cadastro central deste app: é a Área que amarra presença, alocação de
 // colaborador e (nas fases seguintes) a movimentação de VTI. Ver
-// lib/areas.js pro significado de tipo (nível 1: Serviço/Operação) e
-// subtipo (nível 2, depende do tipo escolhido).
+// lib/areas.js pro significado dos 3 tipos (DDS / Serviço / Operação).
 export default function AreasCadastro({ permissoes }) {
   const temAcesso = Boolean(permissoes.acessos?.areas);
   const perm = { criar: temAcesso, editar: temAcesso, deletar: temAcesso };
@@ -87,7 +82,6 @@ export default function AreasCadastro({ permissoes }) {
     setForm({
       nome: area.nome || '',
       tipo: area.tipo || 'servico',
-      subtipo: area.subtipo || (area.tipo === 'operacao' ? 'patio' : 'trabalho'),
       toleranciaEntradaMin: area.toleranciaEntradaMin ?? TOLERANCIA_ENTRADA_MINUTOS,
       toleranciaSaidaMin: area.toleranciaSaidaMin ?? TOLERANCIA_SAIDA_MINUTOS,
       geoLat: area.geoLat ?? null,
@@ -109,16 +103,11 @@ export default function AreasCadastro({ permissoes }) {
     setErro('');
   };
 
-  // O select do formulário mostra as 4 combinações (tipo+subtipo) já
-  // prontas num campo só — troca os dois de uma vez a partir do valor
-  // combinado "tipo:subtipo" (ver OPCOES_TIPO_AREA em lib/areas.js).
-  const mudarTipoCombinado = (valor) => {
-    const [novoTipo, novoSubtipo] = valor.split(':');
-    setForm((f) => ({ ...f, tipo: novoTipo, subtipo: novoSubtipo }));
-  };
-
-  const ehServico = form.tipo === 'servico';
-  const ehTrabalho = ehServico && form.subtipo === 'trabalho';
+  // Só DDS e Serviço têm tolerância de registro (são os 2 tipos ligados a
+  // presença de colaborador) — e só Serviço tem janela de SAÍDA (DDS é só
+  // chegada). Operação não tem nenhum dos dois.
+  const temTolerancia = form.tipo === 'dds' || form.tipo === 'servico';
+  const temSaida = form.tipo === 'servico';
 
   // O ponto precisa ser capturado NO local (o celular de quem está lá) —
   // é esse ponto que vira o centro do raio de abrangência. Por isso o
@@ -155,13 +144,13 @@ export default function AreasCadastro({ permissoes }) {
     }
     let toleranciaEntrada = null;
     let toleranciaSaida = null;
-    if (ehServico) {
+    if (temTolerancia) {
       toleranciaEntrada = Number(form.toleranciaEntradaMin);
       if (!Number.isFinite(toleranciaEntrada) || toleranciaEntrada < 0 || toleranciaEntrada > 180) {
         setErro('A tolerância de entrada precisa ficar entre 0 e 180 minutos.');
         return;
       }
-      if (ehTrabalho) {
+      if (temSaida) {
         toleranciaSaida = Number(form.toleranciaSaidaMin);
         if (!Number.isFinite(toleranciaSaida) || toleranciaSaida < 0 || toleranciaSaida > 180) {
           setErro('A tolerância de saída precisa ficar entre 0 e 180 minutos.');
@@ -175,7 +164,6 @@ export default function AreasCadastro({ permissoes }) {
       const payload = {
         nome: form.nome.trim(),
         tipo: form.tipo,
-        subtipo: form.subtipo,
         toleranciaEntradaMin: toleranciaEntrada,
         toleranciaSaidaMin: toleranciaSaida,
         geoLat: form.geoLat,
@@ -285,11 +273,12 @@ export default function AreasCadastro({ permissoes }) {
       </div>
 
       <p style={ui.placeholderNote}>
-        <strong>Área de Serviço</strong>: onde os colaboradores batem presença (DDS, áreas de
-        trabalho). <strong>Área de Operação</strong>: onde as VTIs são movimentadas (pátio,
-        produção) — cadastro já disponível, a tela de movimentação vem numa fase seguinte. Em
-        todas, a validação é feita por <strong>geolocalização</strong>; o QR Code é sempre
-        opcional, só um atalho pra abrir a tela já na área certa.
+        <strong>DDS</strong>: só registra o momento da DDS (sem saída). <strong>Serviço</strong>:
+        local onde a ML presta mão de obra — registra chegada e saída dos colaboradores.{' '}
+        <strong>Operação</strong>: onde as VTIs são movimentadas (pátio, produção) — cadastro já
+        disponível, a tela de movimentação vem numa fase seguinte. Em todas, a validação é feita
+        por <strong>geolocalização</strong>; o QR Code é sempre opcional, só um atalho pra abrir a
+        tela já na área certa.
       </p>
 
       {erro && <div style={ui.erro}>❌ {erro}</div>}
@@ -310,22 +299,14 @@ export default function AreasCadastro({ permissoes }) {
             </label>
             <label style={ui.label}>
               Tipo *
-              <select
-                style={ui.input}
-                value={valorTipoArea(form.tipo, form.subtipo)}
-                onChange={(e) => mudarTipoCombinado(e.target.value)}
-              >
-                {['Área de Serviço', 'Área de Operação'].map((grupo) => (
-                  <optgroup key={grupo} label={grupo}>
-                    {OPCOES_TIPO_AREA.filter((o) => o.grupo === grupo).map((o) => (
-                      <option key={valorTipoArea(o.tipo, o.subtipo)} value={valorTipoArea(o.tipo, o.subtipo)}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </optgroup>
+              <select style={ui.input} value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
+                {TIPOS_AREA.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
                 ))}
               </select>
-              <span style={styles.ajuda}>{opcaoTipoArea(form.tipo, form.subtipo)?.descricao}</span>
+              <span style={styles.ajuda}>{TIPOS_AREA.find((t) => t.id === form.tipo)?.descricao}</span>
             </label>
             <label style={ui.label}>
               Status
@@ -336,7 +317,7 @@ export default function AreasCadastro({ permissoes }) {
             </label>
           </div>
 
-          {ehServico && (
+          {temTolerancia && (
             <>
               <h4 style={styles.subtitulo}>Tolerância de registro</h4>
               <div style={styles.geoBox}>
@@ -352,7 +333,7 @@ export default function AreasCadastro({ permissoes }) {
                       onChange={(e) => setForm({ ...form, toleranciaEntradaMin: e.target.value })}
                     />
                   </label>
-                  {ehTrabalho && (
+                  {temSaida && (
                     <label style={ui.label}>
                       Saída (min) *
                       <input
@@ -464,7 +445,6 @@ export default function AreasCadastro({ permissoes }) {
               <tr>
                 <th style={ui.th}>Área</th>
                 <th style={ui.th}>Tipo</th>
-                <th style={ui.th}>Categoria</th>
                 <th style={ui.th}>Tolerância</th>
                 <th style={ui.th}>Geolocalização</th>
                 <th style={ui.th}>Raio</th>
@@ -481,20 +461,15 @@ export default function AreasCadastro({ permissoes }) {
                     {a.observacao && <div style={styles.observacao}>{a.observacao}</div>}
                   </td>
                   <td style={ui.td}>
-                    <span style={{ ...ui.badge, ...(a.tipo === 'operacao' ? ui.badgeAzul : ui.badgeLaranja) }}>
-                      {rotuloTipoArea(a.tipo)}
-                    </span>
+                    <span style={{ ...ui.badge, ...styles.corBadgeTipo[a.tipo] }}>{rotuloTipoArea(a.tipo)}</span>
                   </td>
-                  <td style={ui.td}>{rotuloSubtipoArea(a)}</td>
                   <td style={ui.td}>
                     {a.tipo === 'servico' ? (
-                      a.subtipo === 'trabalho' ? (
-                        <span style={{ fontSize: 12, color: '#555' }}>
-                          {a.toleranciaEntradaMin ?? TOLERANCIA_ENTRADA_MINUTOS}min / {a.toleranciaSaidaMin ?? TOLERANCIA_SAIDA_MINUTOS}min
-                        </span>
-                      ) : (
-                        <span style={{ fontSize: 12, color: '#555' }}>{a.toleranciaEntradaMin ?? TOLERANCIA_ENTRADA_MINUTOS}min</span>
-                      )
+                      <span style={{ fontSize: 12, color: '#555' }}>
+                        {a.toleranciaEntradaMin ?? TOLERANCIA_ENTRADA_MINUTOS}min / {a.toleranciaSaidaMin ?? TOLERANCIA_SAIDA_MINUTOS}min
+                      </span>
+                    ) : a.tipo === 'dds' ? (
+                      <span style={{ fontSize: 12, color: '#555' }}>{a.toleranciaEntradaMin ?? TOLERANCIA_ENTRADA_MINUTOS}min</span>
                     ) : (
                       <span style={{ color: '#999' }}>—</span>
                     )}
@@ -585,6 +560,9 @@ const styles = {
   ajuda: { fontSize: 12, color: '#777', fontWeight: 400 },
   subtitulo: { margin: '18px 0 8px', color: NAVY },
   geoBox: { background: '#F8F9FB', borderRadius: 8, padding: 16, marginBottom: 16 },
+  // Uma cor por tipo — precisa ser referenciado depois de `ui` existir,
+  // por isso fica aqui embaixo em vez de junto das constantes do topo.
+  corBadgeTipo: { dds: ui.badgeLaranja, servico: ui.badgeAzul, operacao: ui.badgeRoxo },
   codigo: {
     marginLeft: 8,
     fontSize: 11,

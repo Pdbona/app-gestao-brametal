@@ -15,7 +15,7 @@ import { NAVY, ORANGE } from '../lib/styles';
 import LogoBrametal from './LogoBrametal';
 import { normalizarCpf, validarCpf, formatarCpf } from '../lib/cpf';
 import { capturarGeolocalizacao } from '../lib/geo';
-import { avaliarArea, resolverAreaPorGeo, areasDoColaborador, raioDaArea, temGeo } from '../lib/areas';
+import { avaliarArea, resolverAreaPorGeo, areasDoColaborador, raioDaArea, temGeo, ehTipoDePresenca } from '../lib/areas';
 import { PERFIL_ADMIN_PADRAO } from '../lib/permissoes';
 import {
   hojeISO,
@@ -100,12 +100,12 @@ export default function RegistroPresencaScreen({ areaId }) {
         ]);
         if (cancelado) return;
 
-        // Só áreas de SERVIÇO entram aqui — esta tela é sobre presença de
-        // colaboradores. Área de Operação (pátio/produção de VTI) não tem
-        // relação com isso.
+        // Só áreas de presença (DDS/Serviço) entram aqui — esta tela é
+        // sobre presença de colaboradores. Operação (pátio/produção de
+        // VTI) não tem relação com isso.
         const todasAreas = areasSnap.docs
           .map((d) => ({ id: d.id, ...d.data() }))
-          .filter((a) => a.status !== 'inativo' && a.tipo === 'servico');
+          .filter((a) => a.status !== 'inativo' && ehTipoDePresenca(a.tipo));
         setAreas(todasAreas);
         setColaboradores(colabsSnap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((c) => c.ativo !== false));
         setTurnos(turnosSnap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((t) => t.ativo !== false));
@@ -119,7 +119,7 @@ export default function RegistroPresencaScreen({ areaId }) {
             return;
           }
           const area = { id: snap.id, ...snap.data() };
-          if (area.tipo !== 'servico') {
+          if (!ehTipoDePresenca(area.tipo)) {
             setErroCarga('Este QR Code não é de uma área de presença. Fale com o Administrativo.');
             return;
           }
@@ -282,7 +282,7 @@ export default function RegistroPresencaScreen({ areaId }) {
     const registrosHoje = await buscarRegistrosDeHoje();
 
     // Ponto de DDS: só chegada, uma por dia.
-    if (area.subtipo === 'dds') {
+    if (area.tipo === 'dds') {
       const jaFez = registrosHoje.find((r) => r.tipoRegistro === 'dds' && r.areaId === area.id);
       if (jaFez) {
         bloquear(`Seu DDS de hoje já foi registrado às ${formatarHorario(jaFez.dataHoraEntrada)}.`);
@@ -363,7 +363,7 @@ export default function RegistroPresencaScreen({ areaId }) {
     // DDS acontece antes do turno começar — validar janela ali só geraria
     // falso bloqueio. O horário fica registrado (é o que alimenta o
     // indicador de dispersão DDS → área).
-    if (area.subtipo === 'dds' || !turno || !turno.horaInicio) {
+    if (area.tipo === 'dds' || !turno || !turno.horaInicio) {
       setStatusJanela('sem_horario');
       setMinutosDesvio(null);
       setEtapa('selfie');
@@ -464,7 +464,7 @@ export default function RegistroPresencaScreen({ areaId }) {
           perfilNome: perfilDoColaborador ? perfilDoColaborador.nome : null,
           areaId: areaEscolhida.id,
           areaNome: areaEscolhida.nome,
-          tipoRegistro: areaEscolhida.subtipo === 'dds' ? 'dds' : 'trabalho',
+          tipoRegistro: areaEscolhida.tipo === 'dds' ? 'dds' : 'trabalho',
           turnoId: turnoEscolhido ? turnoEscolhido.id : null,
           turnoNome: turnoEscolhido ? turnoEscolhido.nome : null,
           data: hojeISO(),
@@ -678,7 +678,7 @@ export default function RegistroPresencaScreen({ areaId }) {
               <LinhaResumo rotulo="Área" valor={areaEscolhida.nome} />
               <LinhaResumo
                 rotulo="Registro"
-                valor={ehSaida ? 'Saída' : areaEscolhida.subtipo === 'dds' ? 'Chegada no DDS' : 'Chegada'}
+                valor={ehSaida ? 'Saída' : areaEscolhida.tipo === 'dds' ? 'Chegada no DDS' : 'Chegada'}
               />
               {turnoEscolhido && <LinhaResumo rotulo="Turno" valor={turnoEscolhido.nome} />}
               <LinhaResumo rotulo="Distância do ponto" valor={`${Math.round(posicao.distancia)}m`} />
@@ -700,7 +700,7 @@ export default function RegistroPresencaScreen({ areaId }) {
               {areaEscolhida.nome}
               {turnoEscolhido ? ` — ${turnoEscolhido.nome}` : ''}
             </p>
-            {areaEscolhida.subtipo === 'dds' && !ehSaida && (
+            {areaEscolhida.tipo === 'dds' && !ehSaida && (
               <p style={styles.finalNota}>Bom trabalho! Ao chegar na sua área, registre a chegada lá também.</p>
             )}
             <button style={styles.botaoSecundario} onClick={sair}>

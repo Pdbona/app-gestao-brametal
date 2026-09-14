@@ -28,10 +28,11 @@ const COLABORADOR_VAZIO = {
 //
 // O vínculo com Área é o que resolve o ponto levantado pelo Pablo: parte
 // dos colaboradores tem DOIS locais de chegada — o ponto de DDS (comum a
-// todos) e a área de trabalho em que foram alocados. Sem vínculo, a
+// todos) e a área de Serviço em que foram alocados. Sem vínculo, a
 // pessoa não consegue registrar presença em lugar nenhum (proposital: o
-// vínculo é a alocação). Só entram aqui áreas do tipo 'servico' — Área de
-// Operação (pátio/produção de VTI) não tem relação com presença.
+// vínculo é a alocação). Só entram aqui áreas do tipo 'dds' ou 'servico'
+// — área do tipo Operação (pátio/produção de VTI) não tem relação com
+// presença.
 export default function ColaboradoresCadastro({ permissoes }) {
   const temAcesso = Boolean(permissoes.acessos?.colaboradores);
   const perm = { criar: temAcesso, editar: temAcesso, deletar: temAcesso };
@@ -73,12 +74,12 @@ export default function ColaboradoresCadastro({ permissoes }) {
     };
   }, []);
 
-  // Só áreas de SERVIÇO entram na alocação do colaborador — Área de
-  // Operação (pátio/produção de VTI) é sobre movimentação de carga, sem
-  // relação com presença de pessoas.
-  const areasServico = areas.filter((a) => a.status !== 'inativo' && a.tipo === 'servico');
-  const areasDds = areasServico.filter((a) => a.subtipo === 'dds');
-  const areasTrabalho = areasServico.filter((a) => a.subtipo === 'trabalho');
+  // Só áreas de presença (DDS ou Serviço) entram na alocação do
+  // colaborador — Operação (pátio/produção de VTI) é sobre movimentação
+  // de carga, sem relação com presença de pessoas.
+  const areasDds = areas.filter((a) => a.status !== 'inativo' && a.tipo === 'dds');
+  const areasTrabalho = areas.filter((a) => a.status !== 'inativo' && a.tipo === 'servico');
+  const areasPresenca = [...areasDds, ...areasTrabalho];
   const turnosAtivos = turnos.filter((t) => t.ativo !== false);
   const perfisDisponiveis = [PERFIL_ADMIN_PADRAO, ...perfis.filter((p) => p.id !== PERFIL_ADMIN_PADRAO.id)];
   const nomeArea = (id) => areas.find((a) => a.id === id)?.nome || '';
@@ -147,7 +148,7 @@ export default function ColaboradoresCadastro({ permissoes }) {
       return;
     }
     if (!form.areaDdsId && form.areasTrabalhoIds.length === 0) {
-      setErro('Vincule pelo menos uma área (DDS ou área de trabalho) — é ela que libera o registro de presença.');
+      setErro('Vincule pelo menos uma área (DDS ou Serviço) — é ela que libera o registro de presença.');
       return;
     }
     setSalvando(true);
@@ -189,13 +190,13 @@ export default function ColaboradoresCadastro({ permissoes }) {
       <div style={ui.sectionHeaderRow}>
         <h2 style={ui.sectionTitle}>Colaboradores</h2>
         {perm.criar && !formAberto && (
-          <button style={ui.primaryButton} onClick={abrirNovo} disabled={areasServico.length === 0}>
+          <button style={ui.primaryButton} onClick={abrirNovo} disabled={areasPresenca.length === 0}>
             ➕ Novo colaborador
           </button>
         )}
       </div>
 
-      {areasServico.length === 0 && (
+      {areasPresenca.length === 0 && (
         <p style={ui.placeholderNote}>
           Cadastre as áreas de serviço primeiro (Cadastros → Operação → Área) — é o vínculo com a
           área que libera o registro de presença do colaborador.
@@ -288,9 +289,9 @@ export default function ColaboradoresCadastro({ permissoes }) {
             </label>
 
             <div style={{ marginTop: 14 }}>
-              <div style={styles.rotuloBloco}>Áreas de trabalho (chegada e saída)</div>
+              <div style={styles.rotuloBloco}>Áreas de Serviço (chegada e saída)</div>
               {areasTrabalho.length === 0 ? (
-                <p style={ui.placeholderNote}>Nenhuma área de trabalho cadastrada ainda.</p>
+                <p style={ui.placeholderNote}>Nenhuma área de Serviço cadastrada ainda.</p>
               ) : (
                 <div style={styles.chipsAreas}>
                   {areasTrabalho.map((a) => {
@@ -338,7 +339,7 @@ export default function ColaboradoresCadastro({ permissoes }) {
                 <th style={ui.th}>CPF</th>
                 <th style={ui.th}>Perfil</th>
                 <th style={ui.th}>DDS</th>
-                <th style={ui.th}>Áreas de trabalho</th>
+                <th style={ui.th}>Áreas de Serviço</th>
                 <th style={ui.th}>Status</th>
                 <th style={ui.th}>Ações</th>
               </tr>
@@ -386,8 +387,8 @@ export default function ColaboradoresCadastro({ permissoes }) {
       )}
 
       <p style={{ ...ui.placeholderNote, marginTop: 18 }}>
-        Legenda de área de serviço: <strong>Ponto de DDS</strong> registra só chegada;{' '}
-        <strong>Área de trabalho</strong> registra chegada e saída.
+        Legenda: <strong>DDS</strong> registra só chegada; <strong>Serviço</strong> registra
+        chegada e saída.
       </p>
     </div>
   );

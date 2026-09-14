@@ -16,10 +16,14 @@ import { ui, NAVY } from '../../lib/styles';
 
 // Endereço é o primeiro cadastro da Fase 2 (plano de 11/09/2026): um
 // CÓDIGO ÚNICO (texto livre, sem hierarquia Pátio→Bloco — decisão do
-// Pablo) que vive DENTRO de um Pátio (área tipo 'operacao'/subtipo
-// 'patio'). O fluxo é sempre: escolhe o Pátio primeiro, depois cadastra
-// os códigos dentro dele — por isso a tela pede a área ANTES de mostrar
-// qualquer formulário ou lista.
+// Pablo) que vive DENTRO de uma área de Operação. O fluxo é sempre:
+// escolhe a área primeiro, depois cadastra os códigos dentro dela — por
+// isso a tela pede a área ANTES de mostrar qualquer formulário ou lista.
+//
+// ATÉ 14/09/2026 só áreas de Operação/Pátio ganhavam Endereço (Operação/
+// GAL não) — o Pablo pediu pra simplificar o Tipo de Área e juntar
+// Pátio+GAL num tipo só ('operacao'), então agora QUALQUER área de
+// Operação pode ganhar Endereço.
 //
 // Endereçamento de UD (quem usa este cadastro) ainda não existe — este é
 // só o pré-requisito. A permissão 'enderecos' não está travada a nenhum
@@ -29,9 +33,9 @@ export default function EnderecosCadastro({ permissoes, compacto = false }) {
   const temAcesso = Boolean(permissoes.acessos?.enderecos);
   const perm = { criar: temAcesso, editar: temAcesso, deletar: temAcesso };
 
-  const [patios, setPatios] = useState([]);
-  const [carregandoPatios, setCarregandoPatios] = useState(true);
-  const [patioId, setPatioId] = useState('');
+  const [areasOperacao, setAreasOperacao] = useState([]);
+  const [carregandoAreas, setCarregandoAreas] = useState(true);
+  const [areaOperacaoId, setAreaOperacaoId] = useState('');
 
   const [enderecos, setEnderecos] = useState([]);
   const [carregandoEnderecos, setCarregandoEnderecos] = useState(false);
@@ -42,28 +46,28 @@ export default function EnderecosCadastro({ permissoes, compacto = false }) {
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
 
-  // Só áreas de Operação/Pátio — é a única categoria que recebe
-  // endereçamento (GAL não tem, ao menos por enquanto).
+  // Qualquer área do tipo Operação recebe endereçamento (até 14/09/2026
+  // isso era só Pátio, não GAL — ver comentário no topo do arquivo).
   useEffect(() => {
-    const q = query(collection(db, 'areas'), where('tipo', '==', 'operacao'), where('subtipo', '==', 'patio'), orderBy('nome'));
+    const q = query(collection(db, 'areas'), where('tipo', '==', 'operacao'), orderBy('nome'));
     const unsubscribe = onSnapshot(
       q,
       (snap) => {
-        setPatios(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-        setCarregandoPatios(false);
+        setAreasOperacao(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setCarregandoAreas(false);
       },
-      () => setCarregandoPatios(false)
+      () => setCarregandoAreas(false)
     );
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (!patioId) {
+    if (!areaOperacaoId) {
       setEnderecos([]);
       return undefined;
     }
     setCarregandoEnderecos(true);
-    const q = query(collection(db, 'enderecos'), where('areaId', '==', patioId), orderBy('codigo'));
+    const q = query(collection(db, 'enderecos'), where('areaId', '==', areaOperacaoId), orderBy('codigo'));
     const unsubscribe = onSnapshot(
       q,
       (snap) => {
@@ -73,9 +77,9 @@ export default function EnderecosCadastro({ permissoes, compacto = false }) {
       () => setCarregandoEnderecos(false)
     );
     return () => unsubscribe();
-  }, [patioId]);
+  }, [areaOperacaoId]);
 
-  const patioAtual = patios.find((p) => p.id === patioId) || null;
+  const areaOperacaoAtual = areasOperacao.find((p) => p.id === areaOperacaoId) || null;
 
   const existeCodigo = (codigo, ignorarId) =>
     enderecos.some((e) => e.id !== ignorarId && (e.codigo || '').trim().toLowerCase() === codigo.trim().toLowerCase());
@@ -87,15 +91,15 @@ export default function EnderecosCadastro({ permissoes, compacto = false }) {
       return;
     }
     if (existeCodigo(codigo)) {
-      setErro('Já existe esse código neste pátio.');
+      setErro('Já existe esse código nesta área.');
       return;
     }
     setSalvando(true);
     setErro('');
     try {
       await addDoc(collection(db, 'enderecos'), {
-        areaId: patioId,
-        areaNome: patioAtual?.nome || '',
+        areaId: areaOperacaoId,
+        areaNome: areaOperacaoAtual?.nome || '',
         codigo,
         ativo: true,
         criadoEm: serverTimestamp()
@@ -127,7 +131,7 @@ export default function EnderecosCadastro({ permissoes, compacto = false }) {
       return;
     }
     if (existeCodigo(codigo, editandoId)) {
-      setErro('Já existe esse código neste pátio.');
+      setErro('Já existe esse código nesta área.');
       return;
     }
     setSalvando(true);
@@ -167,27 +171,27 @@ export default function EnderecosCadastro({ permissoes, compacto = false }) {
 
       {!compacto && (
         <p style={ui.placeholderNote}>
-          Código livre (sem hierarquia) dentro de um <strong>Pátio</strong>. Escolha o pátio abaixo
-          e cadastre os códigos que ficam dentro dele.
+          Código livre (sem hierarquia) dentro de uma área de <strong>Operação</strong>. Escolha a
+          área abaixo e cadastre os códigos que ficam dentro dela.
         </p>
       )}
 
       {erro && <div style={ui.erro}>❌ {erro}</div>}
 
-      {carregandoPatios ? (
-        <p>Carregando pátios...</p>
-      ) : patios.length === 0 ? (
+      {carregandoAreas ? (
+        <p>Carregando áreas...</p>
+      ) : areasOperacao.length === 0 ? (
         <p style={ui.placeholderNote}>
-          Nenhum Pátio cadastrado ainda — crie uma área do tipo <strong>Operação / Pátio</strong> antes
+          Nenhuma área de Operação cadastrada ainda — crie uma em Cadastros → Operação → Área antes
           de cadastrar endereços.
         </p>
       ) : (
         <>
           <label style={{ ...ui.label, marginBottom: 14 }}>
-            Pátio *
-            <select style={ui.input} value={patioId} onChange={(e) => setPatioId(e.target.value)}>
+            Área de Operação *
+            <select style={ui.input} value={areaOperacaoId} onChange={(e) => setAreaOperacaoId(e.target.value)}>
               <option value="">Selecione...</option>
-              {patios.map((p) => (
+              {areasOperacao.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nome}
                 </option>
@@ -195,7 +199,7 @@ export default function EnderecosCadastro({ permissoes, compacto = false }) {
             </select>
           </label>
 
-          {patioId && (
+          {areaOperacaoId && (
             <>
               {perm.criar && (
                 <div style={styles.linhaAdicionar}>
@@ -215,7 +219,7 @@ export default function EnderecosCadastro({ permissoes, compacto = false }) {
               {carregandoEnderecos ? (
                 <p>Carregando endereços...</p>
               ) : enderecos.length === 0 ? (
-                <p style={ui.placeholderNote}>Nenhum endereço cadastrado neste pátio ainda.</p>
+                <p style={ui.placeholderNote}>Nenhum endereço cadastrado nesta área ainda.</p>
               ) : (
                 <div style={styles.listaCompacta}>
                   {enderecos.map((e) => (

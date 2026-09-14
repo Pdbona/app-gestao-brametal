@@ -30,10 +30,10 @@ export const CATALOGO_ACESSOS = [
   { id: 'bipagem', label: 'Bipagem', icone: '📦', area: 'aba' },
   { id: 'areas', label: 'Área', icone: '📍', area: 'cadastro', grupo: 'operacao' },
   { id: 'turnos', label: 'Turno', icone: '🕐', area: 'cadastro', grupo: 'operacao' },
-  // Endereço (11/09/2026, plano de Fase 2): código livre DENTRO de um
-  // Pátio (área tipo 'operacao'/'patio') — pré-requisito do endereçamento
-  // de UD. Sem perfil travado de propósito (pedido do Pablo): é só esta
-  // permissão que existe; ele decide depois a quem atribuir.
+  // Endereço (11/09/2026, plano de Fase 2): código livre DENTRO de uma
+  // área tipo 'operacao' — pré-requisito do endereçamento de UD. Sem
+  // perfil travado de propósito (pedido do Pablo): é só esta permissão
+  // que existe; ele decide depois a quem atribuir.
   { id: 'enderecos', label: 'Endereço', icone: '🏷️', area: 'cadastro', grupo: 'operacao' },
   { id: 'colaboradores', label: 'Colaborador', icone: '🧑‍🔧', area: 'cadastro' },
   { id: 'perfis', label: 'Perfil', icone: '🛡️', area: 'cadastro', grupo: 'usuarios' },

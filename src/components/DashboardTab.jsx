@@ -37,12 +37,11 @@ export default function DashboardTab() {
     };
   }, [hoje]);
 
-  // Só áreas de SERVIÇO entram no Dashboard de presença — Área de
-  // Operação (pátio/produção de VTI) ganha sua própria seção quando a
-  // tela de movimentação existir.
-  const areasServico = areas.filter((a) => a.status !== 'inativo' && a.tipo === 'servico');
-  const areasTrabalho = areasServico.filter((a) => a.subtipo === 'trabalho');
-  const areasDds = areasServico.filter((a) => a.subtipo === 'dds');
+  // Só áreas de presença (DDS/Serviço) entram no Dashboard — Operação
+  // (pátio/produção de VTI) ganha sua própria seção quando a tela de
+  // movimentação existir.
+  const areasTrabalho = areas.filter((a) => a.status !== 'inativo' && a.tipo === 'servico');
+  const areasDds = areas.filter((a) => a.status !== 'inativo' && a.tipo === 'dds');
   const colaboradoresAtivos = colaboradores.filter((c) => c.ativo !== false);
 
   const registrosDds = registros.filter((r) => r.tipoRegistro === 'dds');
@@ -120,10 +119,10 @@ export default function DashboardTab() {
       </div>
 
       {/* ======== Áreas ======== */}
-      <h3 style={styles.tituloSecao}>Áreas de trabalho</h3>
+      <h3 style={styles.tituloSecao}>Áreas de Serviço</h3>
       {areasTrabalho.length === 0 ? (
         <p style={ui.placeholderNote}>
-          Nenhuma área de trabalho cadastrada ainda — comece por Cadastros → Operação → Área.
+          Nenhuma área de Serviço cadastrada ainda — comece por Cadastros → Operação → Área.
         </p>
       ) : (
         <div style={styles.gridCards}>
