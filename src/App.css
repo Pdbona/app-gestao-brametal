@@ -24,3 +24,14 @@ button {
 input, select, textarea {
   font-family: inherit;
 }
+
+/* Layout de 2 colunas do CadastrosScreen (Área+Turno/Endereço,
+   Usuários+Perfil) usa minmax(420px,...)/minmax(280px,...) — ótimo no
+   desktop, mas os mínimos fixos furam a largura da tela no celular
+   (achado testando a tela de Áreas mais compacta em 14/09/2026). Empilha
+   em 1 coluna abaixo de 640px, mesmo breakpoint já usado no resto do app. */
+@media (max-width: 640px) {
+  .cadastros-duas-colunas {
+    grid-template-columns: 1fr !important;
+  }
+}

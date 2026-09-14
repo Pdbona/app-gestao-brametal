@@ -86,6 +86,15 @@ export const ui = {
     gap: 14,
     marginBottom: 14
   },
+  // Variante pra campos numéricos curtos (tolerância, raio, coordenadas)
+  // que não precisam dos 220px mínimos do formGrid — evita esticar um
+  // campo de 3 dígitos pra ocupar a linha inteira.
+  formGridCompacto: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 150px))',
+    gap: 12,
+    marginBottom: 10
+  },
   label: { display: 'flex', flexDirection: 'column', fontSize: 13, color: '#444', fontWeight: 600, gap: 4 },
   input: {
     padding: 10,

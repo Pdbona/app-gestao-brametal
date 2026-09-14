@@ -16,14 +16,14 @@ import { ui, NAVY } from '../../lib/styles';
 import { capturarGeolocalizacao } from '../../lib/geo';
 import { TOLERANCIA_ENTRADA_MINUTOS, TOLERANCIA_SAIDA_MINUTOS } from '../../lib/data';
 import {
-  TIPOS_AREA,
-  SUBTIPOS_SERVICO,
-  SUBTIPOS_OPERACAO,
+  OPCOES_TIPO_AREA,
   RAIO_PADRAO_METROS,
   RAIO_MINIMO_METROS,
   RAIO_MAXIMO_METROS,
   rotuloTipoArea,
   rotuloSubtipoArea,
+  valorTipoArea,
+  opcaoTipoArea,
   montarUrlRegistro
 } from '../../lib/areas';
 
@@ -32,7 +32,6 @@ const LOGO_BRAMETAL = `${process.env.PUBLIC_URL}/logos/logo-brametal.png`;
 
 const AREA_VAZIA = {
   nome: '',
-  codigo: '',
   tipo: 'servico',
   subtipo: 'trabalho',
   toleranciaEntradaMin: TOLERANCIA_ENTRADA_MINUTOS,
@@ -87,7 +86,6 @@ export default function AreasCadastro({ permissoes }) {
   const abrirEdicao = (area) => {
     setForm({
       nome: area.nome || '',
-      codigo: area.codigo || '',
       tipo: area.tipo || 'servico',
       subtipo: area.subtipo || (area.tipo === 'operacao' ? 'patio' : 'trabalho'),
       toleranciaEntradaMin: area.toleranciaEntradaMin ?? TOLERANCIA_ENTRADA_MINUTOS,
@@ -111,15 +109,12 @@ export default function AreasCadastro({ permissoes }) {
     setErro('');
   };
 
-  // Trocar o tipo (nível 1) reseta o subtipo pro padrão daquela família —
-  // evita salvar um subtipo de Operação (patio/gal) junto de um tipo
-  // Serviço, ou vice-versa.
-  const mudarTipo = (novoTipo) => {
-    setForm((f) => ({
-      ...f,
-      tipo: novoTipo,
-      subtipo: novoTipo === 'operacao' ? 'patio' : 'trabalho'
-    }));
+  // O select do formulário mostra as 4 combinações (tipo+subtipo) já
+  // prontas num campo só — troca os dois de uma vez a partir do valor
+  // combinado "tipo:subtipo" (ver OPCOES_TIPO_AREA em lib/areas.js).
+  const mudarTipoCombinado = (valor) => {
+    const [novoTipo, novoSubtipo] = valor.split(':');
+    setForm((f) => ({ ...f, tipo: novoTipo, subtipo: novoSubtipo }));
   };
 
   const ehServico = form.tipo === 'servico';
@@ -179,9 +174,6 @@ export default function AreasCadastro({ permissoes }) {
     try {
       const payload = {
         nome: form.nome.trim(),
-        // Código só faz sentido pra Área de Serviço — Operação não usa
-        // (pedido do Pablo, 10/09/2026).
-        codigo: ehServico ? form.codigo.trim() : '',
         tipo: form.tipo,
         subtipo: form.subtipo,
         toleranciaEntradaMin: toleranciaEntrada,
@@ -253,8 +245,7 @@ export default function AreasCadastro({ permissoes }) {
   .logos { display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 24px; }
   .logos img { height: 56px; width: auto; }
   .separador { width: 1px; height: 40px; background: #CCC; }
-  h1 { font-size: 22px; color: #1E3A5F; margin: 0 0 4px; }
-  .codigo { font-size: 13px; color: #888; margin: 0 0 20px; }
+  h1 { font-size: 22px; color: #1E3A5F; margin: 0 0 20px; }
   p.instrucao { font-size: 14px; color: #555; margin: 20px 0 0; }
   img.qr { width: 300px; height: 300px; margin-top: 8px; }
   @media print {
@@ -269,7 +260,6 @@ export default function AreasCadastro({ permissoes }) {
     <img src="${LOGO_BRAMETAL}" alt="Brametal" />
   </div>
   <h1>${qrArea.nome}</h1>
-  ${qrArea.codigo ? `<p class="codigo">${qrArea.codigo}</p>` : ''}
   <img class="qr" src="${qrDataUrl}" alt="QR Code" />
   <p class="instrucao">Escaneie para registrar presença</p>
 </body>
@@ -318,41 +308,24 @@ export default function AreasCadastro({ permissoes }) {
                 placeholder="Ex: Pátio Novo"
               />
             </label>
-            {ehServico && (
-              <label style={ui.label}>
-                Código
-                <input
-                  style={ui.input}
-                  value={form.codigo}
-                  onChange={(e) => setForm({ ...form, codigo: e.target.value })}
-                  placeholder="Ex: P2"
-                />
-                <span style={styles.ajuda}>Sigla curta usada nas listagens e relatórios.</span>
-              </label>
-            )}
             <label style={ui.label}>
               Tipo *
-              <select style={ui.input} value={form.tipo} onChange={(e) => mudarTipo(e.target.value)}>
-                {TIPOS_AREA.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
+              <select
+                style={ui.input}
+                value={valorTipoArea(form.tipo, form.subtipo)}
+                onChange={(e) => mudarTipoCombinado(e.target.value)}
+              >
+                {['Área de Serviço', 'Área de Operação'].map((grupo) => (
+                  <optgroup key={grupo} label={grupo}>
+                    {OPCOES_TIPO_AREA.filter((o) => o.grupo === grupo).map((o) => (
+                      <option key={valorTipoArea(o.tipo, o.subtipo)} value={valorTipoArea(o.tipo, o.subtipo)}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
-              <span style={styles.ajuda}>{TIPOS_AREA.find((t) => t.id === form.tipo)?.descricao}</span>
-            </label>
-            <label style={ui.label}>
-              {ehServico ? 'Comportamento *' : 'Categoria *'}
-              <select style={ui.input} value={form.subtipo} onChange={(e) => setForm({ ...form, subtipo: e.target.value })}>
-                {(ehServico ? SUBTIPOS_SERVICO : SUBTIPOS_OPERACAO).map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-              <span style={styles.ajuda}>
-                {(ehServico ? SUBTIPOS_SERVICO : SUBTIPOS_OPERACAO).find((s) => s.id === form.subtipo)?.descricao}
-              </span>
+              <span style={styles.ajuda}>{opcaoTipoArea(form.tipo, form.subtipo)?.descricao}</span>
             </label>
             <label style={ui.label}>
               Status
@@ -367,9 +340,9 @@ export default function AreasCadastro({ permissoes }) {
             <>
               <h4 style={styles.subtitulo}>Tolerância de registro</h4>
               <div style={styles.geoBox}>
-                <div style={ui.formGrid}>
+                <div style={ui.formGridCompacto}>
                   <label style={ui.label}>
-                    Tolerância de entrada (min) *
+                    Entrada (min) *
                     <input
                       type="number"
                       min={0}
@@ -378,14 +351,10 @@ export default function AreasCadastro({ permissoes }) {
                       value={form.toleranciaEntradaMin}
                       onChange={(e) => setForm({ ...form, toleranciaEntradaMin: e.target.value })}
                     />
-                    <span style={styles.ajuda}>
-                      Quantos minutos antes/depois do início do turno o colaborador ainda pode
-                      registrar chegada sem precisar de autorização.
-                    </span>
                   </label>
                   {ehTrabalho && (
                     <label style={ui.label}>
-                      Tolerância de saída (min) *
+                      Saída (min) *
                       <input
                         type="number"
                         min={0}
@@ -394,13 +363,13 @@ export default function AreasCadastro({ permissoes }) {
                         value={form.toleranciaSaidaMin}
                         onChange={(e) => setForm({ ...form, toleranciaSaidaMin: e.target.value })}
                       />
-                      <span style={styles.ajuda}>
-                        Quantos minutos antes/depois do fim do turno a saída é considerada normal,
-                        sem exigir justificativa.
-                      </span>
                     </label>
                   )}
                 </div>
+                <span style={styles.ajuda}>
+                  Quantos minutos antes/depois do início (e do fim, se a área tiver saída) o
+                  colaborador ainda registra sem precisar de autorização.
+                </span>
               </div>
             </>
           )}
@@ -422,11 +391,11 @@ export default function AreasCadastro({ permissoes }) {
               )}
             </div>
             <p style={styles.ajuda}>
-              Capture estando <strong>dentro da área</strong> (é esse ponto que vira o centro do círculo).
-              Se estiver cadastrando da mesa, dá pra digitar as coordenadas abaixo.
+              Capture estando <strong>dentro da área</strong>. Cadastrando da mesa, dá pra digitar
+              as coordenadas abaixo.
             </p>
 
-            <div style={ui.formGrid}>
+            <div style={ui.formGridCompacto}>
               <label style={ui.label}>
                 Latitude
                 <input
@@ -446,7 +415,7 @@ export default function AreasCadastro({ permissoes }) {
                 />
               </label>
               <label style={ui.label}>
-                Raio de abrangência (metros) *
+                Raio (m) *
                 <input
                   type="number"
                   min={RAIO_MINIMO_METROS}
@@ -455,12 +424,12 @@ export default function AreasCadastro({ permissoes }) {
                   value={form.raioMetros}
                   onChange={(e) => setForm({ ...form, raioMetros: e.target.value })}
                 />
-                <span style={styles.ajuda}>
-                  Distância máxima do ponto pra o registro ser aceito. O GPS do celular erra algumas
-                  dezenas de metros — abaixo de {RAIO_MINIMO_METROS}m fica instável.
-                </span>
               </label>
             </div>
+            <span style={styles.ajuda}>
+              Distância máxima do ponto pra o registro ser aceito ({RAIO_MINIMO_METROS}m–
+              {RAIO_MAXIMO_METROS}m — abaixo de {RAIO_MINIMO_METROS}m o GPS do celular fica instável).
+            </span>
           </div>
 
           <label style={{ ...ui.label, marginBottom: 16 }}>

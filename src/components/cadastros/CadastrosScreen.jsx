@@ -43,7 +43,7 @@ export default function CadastrosScreen({ permissoes, secaoAtualId }) {
   if (itemAtual.id === 'operacao') {
     const ids = itemAtual.secoes.map((s) => s.id);
     return (
-      <div style={styles.duasColunasProporcao}>
+      <div style={styles.duasColunasProporcao} className="cadastros-duas-colunas">
         {ids.indexOf('areas') >= 0 && <AreasCadastro permissoes={permissoes} />}
         <div style={styles.colunaEmpilhada}>
           {ids.indexOf('turnos') >= 0 && <TurnosCadastro permissoes={permissoes} compacto />}
@@ -57,7 +57,7 @@ export default function CadastrosScreen({ permissoes, secaoAtualId }) {
   if (itemAtual.id === 'usuarios') {
     const ids = itemAtual.secoes.map((s) => s.id);
     return (
-      <div style={styles.duasColunasProporcao}>
+      <div style={styles.duasColunasProporcao} className="cadastros-duas-colunas">
         {ids.indexOf('usuarios') >= 0 && <UsuariosCadastro permissoes={permissoes} />}
         {ids.indexOf('perfis') >= 0 && <PerfisCadastro permissoes={permissoes} compacto />}
       </div>

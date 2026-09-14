@@ -59,6 +59,51 @@ export const RAIO_PADRAO_METROS = 100;
 export const RAIO_MINIMO_METROS = 20;
 export const RAIO_MAXIMO_METROS = 2000;
 
+// Lista "achatada" (nível 1 + nível 2 num só) usada no formulário de
+// cadastro — pedido do Pablo (14/09/2026) pra simplificar de 2 campos
+// (Tipo + Comportamento) pra 1 só, já com "DDS" como opção direta. A
+// área continua guardando `tipo`/`subtipo` separados por baixo (é o que
+// o resto do app usa: filtro de área de serviço, alocação de
+// colaborador, dashboards) — só a TELA de cadastro ficou mais simples.
+export const OPCOES_TIPO_AREA = [
+  {
+    tipo: 'servico',
+    subtipo: 'dds',
+    grupo: 'Área de Serviço',
+    label: 'DDS',
+    descricao: 'Só registra a chegada dos colaboradores (sem saída).'
+  },
+  {
+    tipo: 'servico',
+    subtipo: 'trabalho',
+    grupo: 'Área de Serviço',
+    label: 'Área de trabalho',
+    descricao: 'Registra chegada e saída dos colaboradores.'
+  },
+  {
+    tipo: 'operacao',
+    subtipo: 'patio',
+    grupo: 'Área de Operação',
+    label: 'Pátio',
+    descricao: 'Movimentação de VTIs — terá endereços próprios.'
+  },
+  {
+    tipo: 'operacao',
+    subtipo: 'gal',
+    grupo: 'Área de Operação',
+    label: 'GAL (Produção)',
+    descricao: 'Movimentação de VTIs — galpão de produção.'
+  }
+];
+
+export function valorTipoArea(tipo, subtipo) {
+  return `${tipo}:${subtipo}`;
+}
+
+export function opcaoTipoArea(tipo, subtipo) {
+  return OPCOES_TIPO_AREA.find((o) => o.tipo === tipo && o.subtipo === subtipo) || null;
+}
+
 export function rotuloTipoArea(id) {
   const t = TIPOS_AREA.find((x) => x.id === id);
   return t ? t.label : id || '-';

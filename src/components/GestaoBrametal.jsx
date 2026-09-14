@@ -261,9 +261,14 @@ export default function GestaoBrametal() {
             <>
               <button
                 onClick={abrirCadastros}
-                style={{ ...styles.sidebarButton, ...(abaAtual === 'cadastros' ? styles.sidebarButtonAtivo : {}) }}
+                style={{
+                  ...styles.sidebarButton,
+                  ...styles.sidebarButtonComSubmenu,
+                  ...(abaAtual === 'cadastros' ? styles.sidebarButtonAtivo : {})
+                }}
               >
-                🗂️ Cadastros
+                <span>🗂️ Cadastros</span>
+                <span style={styles.submenuIndicador}>{cadastrosExpandido ? '−' : '+'}</span>
               </button>
               {cadastrosExpandido && (
                 <div style={styles.sidebarSubGroup} className="app-sidebar-sub">
@@ -419,6 +424,10 @@ const styles = {
     fontSize: 14
   },
   sidebarButtonAtivo: { background: NAVY, color: '#FFF' },
+  // Indica visualmente que o item abre uma lista de opções embaixo —
+  // "+" fechado / "−" aberto, mesmo sinal que qualquer accordion usa.
+  sidebarButtonComSubmenu: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  submenuIndicador: { fontWeight: 700, opacity: 0.6 },
   sidebarSubGroup: { display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 6 },
   sidebarSubButton: {
     textAlign: 'left',
