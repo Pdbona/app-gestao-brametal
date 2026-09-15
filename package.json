@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "App de Gestão — SBS Solution — ML Serviços @ Brametal",
   "private": true,
-  "homepage": "https://pdbona.github.io/app-gestao-brametal/",
+  "homepage": "./",
   "dependencies": {
     "firebase": "^12.19.0",
     "qrcode": "^1.5.4",
