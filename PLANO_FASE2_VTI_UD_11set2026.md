@@ -285,4 +285,30 @@ foram levantados e resolvidos com ele via AskUserQuestion:
   `null` porque as áreas de Operação ainda não têm geolocalização
   cadastrada — é o comportamento esperado do fallback manual. Dados de
   teste apagados depois.
-- ⏳ Segue em aberto do plano original: dashboards (passos 6-9).
+- ✅ **Passos 6-9 — Dashboards (17/09/2026)**, todos em `DashboardTab.jsx`
+  (mesma tela única de Fase 1, com novas seções — segue o padrão já
+  usado, gate único de permissão `dashboard`):
+  - **VTIs em operação** (passo 6): cards por VTI com status/localização
+    atual; histórico do dia reconstruído combinando UDs bipadas/
+    endereçadas hoje + fases de movimentação hoje (não existe um array
+    de eventos gravado na VTI — é montado em memória a partir das outras
+    coleções).
+  - **Operador de Trator** (passo 7): contagem de VTIs cheias/vazias,
+    tempo trabalhando, km, toneladas (aprox., soma do peso das UDs de
+    cada VTI movimentada). **"Disponível" foi REDEFINIDO** em relação ao
+    §2 original: como o Check-in não reaproveita mais presença (decisão
+    de 17/09), não existe hora de início/fim de turno do operador —
+    "disponível" virou a soma dos intervalos ENTRE movimentações
+    concluídas do dia (não conta antes da 1ª nem depois da última). Vale
+    confirmar com o Pablo se essa definição atende.
+  - **Armazenamento/Conferência** (passo 8): UDs endereçadas hoje,
+    tonelagem (agora COM fonte real via Fluxo A/import, não fica mais
+    "—" fixo), UDs aguardando armazenagem, tabela por Pátio (só entram
+    áreas que já têm Endereço cadastrado, pra não misturar com GAL).
+  - **Refinamento de Presença** (passo 9): 2 KPIs novos ("Só no DDS",
+    "Fora do local hoje") a partir da mesma lógica de registros já
+    carregada — sem coleção nova.
+  **Testado ponta a ponta contra o Firestore real** (dev local): VTI
+  criada por Bipagem → movida via Check-in → endereçada via
+  Endereçamento — as 3 seções novas conferidas em cada etapa (contagens,
+  eventos do dia, tabela por pátio). Dados de teste apagados depois.
