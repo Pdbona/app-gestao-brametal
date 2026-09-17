@@ -28,6 +28,17 @@ export const CATALOGO_ACESSOS = [
   // bipa cada UD sobre ela. Item de 1º nível na sidebar, igual ao
   // Dashboard.
   { id: 'bipagem', label: 'Bipagem', icone: '📦', area: 'aba' },
+  // Telas 1-3 (17/09/2026, FASE_2_TELAS_1-3_BRAMETAL.md):
+  // - Importação: Fluxo A (planilha da Brametal), uso do Administrativo.
+  // - Check-in: tela do Operador de Trator (movimentação de VTI entre
+  //   áreas) — perfil próprio, identificado por senha (não reaproveita a
+  //   presença, que não tem senha — decisão do Pablo em 17/09/2026).
+  // - Endereçamento: tela do Conferente no pátio, associa cada UD
+  //   bipada a um Endereço — distinto da permissão 'enderecos' (que é o
+  //   CADASTRO dos códigos de endereço, não o uso diário de bipar).
+  { id: 'importacao', label: 'Importação', icone: '📂', area: 'aba' },
+  { id: 'checkin', label: 'Check-in', icone: '🚚', area: 'aba' },
+  { id: 'enderecamento', label: 'Endereçamento', icone: '🏭', area: 'aba' },
   { id: 'areas', label: 'Área', icone: '📍', area: 'cadastro', grupo: 'operacao' },
   { id: 'turnos', label: 'Turno', icone: '🕐', area: 'cadastro', grupo: 'operacao' },
   // Endereço (11/09/2026, plano de Fase 2): código livre DENTRO de uma
@@ -93,9 +104,14 @@ export function mergePermissoes(base, overrides) {
 export function abaInicial(permissoes) {
   const acessos = (permissoes && permissoes.acessos) || {};
   if (acessos.dashboard) return 'dashboard';
-  // Conferente costuma ter só Bipagem liberada, sem Dashboard — cai
-  // direto na tela de uso diário dele em vez de "Cadastros" (11/09/2026).
+  // Conferente/Tratorista/Administrativo de importação costumam ter só
+  // a própria tela de uso diário liberada, sem Dashboard — caem direto
+  // nela em vez de "Cadastros" (11/09/2026, ampliado em 17/09/2026 pras
+  // Telas 1-3 novas).
   if (acessos.bipagem) return 'bipagem';
+  if (acessos.checkin) return 'checkin';
+  if (acessos.enderecamento) return 'enderecamento';
+  if (acessos.importacao) return 'importacao';
   return 'cadastros';
 }
 

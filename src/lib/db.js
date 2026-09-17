@@ -22,6 +22,7 @@ export {
   query,
   where,
   orderBy,
+  limit,
   serverTimestamp
 } from 'firebase/firestore';
 

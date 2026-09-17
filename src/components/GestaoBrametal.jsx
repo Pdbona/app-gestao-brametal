@@ -12,6 +12,9 @@ import { NAVY, NAVY_LIGHT, ORANGE, ui } from '../lib/styles';
 import LogoBrametal from './LogoBrametal';
 import DashboardTab from './DashboardTab';
 import BipagemScreen from './BipagemScreen';
+import ImportacaoScreen from './ImportacaoScreen';
+import CheckinOperadorScreen from './CheckinOperadorScreen';
+import EnderecamentoScreen from './EnderecamentoScreen';
 import CadastrosScreen from './cadastros/CadastrosScreen';
 
 // Cabeçalho carrega as DUAS marcas: ML Serviços (quem opera o sistema) e
@@ -156,6 +159,9 @@ export default function GestaoBrametal() {
   const permissoes = usuarioAtivo.permissoes;
   const temDashboard = Boolean(permissoes.acessos?.dashboard);
   const temBipagem = Boolean(permissoes.acessos?.bipagem);
+  const temImportacao = Boolean(permissoes.acessos?.importacao);
+  const temCheckin = Boolean(permissoes.acessos?.checkin);
+  const temEnderecamento = Boolean(permissoes.acessos?.enderecamento);
   // "Cadastros" não é um flag próprio — aparece assim que pelo menos 1
   // seção de cadastro estiver liberada (modelo flat, ver lib/permissoes).
   const temCadastros = SECOES_CADASTRO.some((s) => permissoes.acessos?.[s.id]);
@@ -257,6 +263,33 @@ export default function GestaoBrametal() {
             </button>
           )}
 
+          {temImportacao && (
+            <button
+              onClick={() => setAbaAtual('importacao')}
+              style={{ ...styles.sidebarButton, ...(abaAtual === 'importacao' ? styles.sidebarButtonAtivo : {}) }}
+            >
+              📂 Importação
+            </button>
+          )}
+
+          {temCheckin && (
+            <button
+              onClick={() => setAbaAtual('checkin')}
+              style={{ ...styles.sidebarButton, ...(abaAtual === 'checkin' ? styles.sidebarButtonAtivo : {}) }}
+            >
+              🚚 Check-in
+            </button>
+          )}
+
+          {temEnderecamento && (
+            <button
+              onClick={() => setAbaAtual('enderecamento')}
+              style={{ ...styles.sidebarButton, ...(abaAtual === 'enderecamento' ? styles.sidebarButtonAtivo : {}) }}
+            >
+              🏭 Endereçamento
+            </button>
+          )}
+
           {temCadastros && (
             <>
               <button
@@ -293,6 +326,9 @@ export default function GestaoBrametal() {
         <div style={styles.content} className="app-content">
           {abaAtual === 'dashboard' && temDashboard && <DashboardTab />}
           {abaAtual === 'bipagem' && temBipagem && <BipagemScreen />}
+          {abaAtual === 'importacao' && temImportacao && <ImportacaoScreen usuario={usuarioAtivo} />}
+          {abaAtual === 'checkin' && temCheckin && <CheckinOperadorScreen usuario={usuarioAtivo} />}
+          {abaAtual === 'enderecamento' && temEnderecamento && <EnderecamentoScreen />}
           {abaAtual === 'cadastros' && temCadastros && (
             <CadastrosScreen permissoes={permissoes} secaoAtualId={secaoAtual?.id} />
           )}
