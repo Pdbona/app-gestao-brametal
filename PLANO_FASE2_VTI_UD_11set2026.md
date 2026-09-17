@@ -275,8 +275,14 @@ foram levantados e resolvidos com ele via AskUserQuestion:
   iniciar uma movimentação de teste. Texto de regra atualizado entregue
   ao Pablo pra colar no Console (mesma trava de sempre: eu não publico
   regra de segurança sozinho).
-- ⏳ **Pendente pro Pablo**: colar a regra de segurança atualizada
-  (adiciona `movimentacoesVti` e `importacoesVti`) no Console do
-  Firebase; depois disso, vale um teste rápido do Check-in ponta a ponta
-  pra confirmar.
+- ✅ **Regra de segurança publicada pelo Pablo (17/09/2026)** e
+  **Check-in reconfirmado ponta a ponta em produção**
+  (pdbona.github.io/app-gestao-brametal): VTI de teste criada via
+  Bipagem em GAL1 → movimentação iniciada e concluída pelo Check-in até
+  Pátio 1 (Nova) → conferido via REST do Firestore que `vtis.status`
+  voltou a `cheia` na área de destino e `movimentacoesVti` gravou as
+  duas fases (INÍCIO/FIM) corretamente. `geoInicioLat/Lng` ficaram
+  `null` porque as áreas de Operação ainda não têm geolocalização
+  cadastrada — é o comportamento esperado do fallback manual. Dados de
+  teste apagados depois.
 - ⏳ Segue em aberto do plano original: dashboards (passos 6-9).
