@@ -291,7 +291,13 @@ export default function DashboardTab() {
       </div>
 
       {/* ======== Mapa ======== */}
-      <MapaOperacional areas={areas} vtis={vtis} registrosDds={registrosDds} presentesAgora={presentesAgora} />
+      <MapaOperacional
+        areas={areas}
+        vtis={vtis}
+        uds={uds}
+        registrosDds={registrosDds}
+        presentesAgora={presentesAgora}
+      />
 
       {/* ======== Áreas ======== */}
       <h3 style={styles.tituloSecao}>Áreas de Serviço</h3>
