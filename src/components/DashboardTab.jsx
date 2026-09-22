@@ -3,7 +3,8 @@ import { db, collection, onSnapshot, query, where, orderBy } from '../lib/db';
 import { ui, NAVY } from '../lib/styles';
 import { hojeISO, formatarHorario, formatarDataBr, paraMillis, ehMesmoDia } from '../lib/data';
 import { rotuloStatusVti, badgeStatusVti } from '../lib/vti';
-import MapaOperacional from './MapaOperacional';
+import MapaGestaoEquipe from './MapaGestaoEquipe';
+import MapaGestaoVtis from './MapaGestaoVtis';
 
 // Dashboard — Fase 1 cobria só presença. Em 17/09/2026 (passos 6-9 do
 // PLANO_FASE2_VTI_UD_11set2026.md) entraram os 3 dashboards de VTI/UD
@@ -290,14 +291,14 @@ export default function DashboardTab() {
         </div>
       </div>
 
-      {/* ======== Mapa ======== */}
-      <MapaOperacional
+      {/* ======== Mapas ======== */}
+      <MapaGestaoEquipe
         areas={areas}
-        vtis={vtis}
-        uds={uds}
-        registrosDds={registrosDds}
         presentesAgora={presentesAgora}
+        registrosDds={registrosDds}
+        registrosTrabalho={registrosTrabalho}
       />
+      <MapaGestaoVtis areas={areas} vtis={vtis} uds={uds} />
 
       {/* ======== Áreas ======== */}
       <h3 style={styles.tituloSecao}>Áreas de Serviço</h3>
